@@ -4,13 +4,19 @@
 
     #include <asio.h>
 
+    #include "../windows/files/wav.hpp"
+
 #elif defined(__APPLE__) // macOS defines
 
     #include <CoreAudio/CoreAudio.h>
 
+    #include "../macos/files/wav.hpp"
+
 #elif defined(__linux__) // Linux defines
 
     #include <jack/jack.h>
+
+    #include "../linux/files/wav.hpp"
 
 #else // Other OS
 
