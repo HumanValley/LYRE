@@ -21,7 +21,7 @@ ADSH::Wave & ADSH::Wave::operator=(const ADSH::Wave & rhs) noexcept {
     if (this != &rhs) {
 
         this->header = rhs.header;
-        data = new char[rhs.header.dataChunkSize];
+        // data = new char[rhs.header.dataChunkSize];
     	std::memcpy(data, rhs.data, rhs.header.dataChunkSize);
     }
     return *this;
@@ -41,38 +41,71 @@ ADSH::Wave & ADSH::Wave::operator=(ADSH::Wave && rhs) noexcept {
 void ADSH::Wave::load(const std::string path) {
 
     char *buffer;
+	char *raw;
 
-	buffer = readFile(path);
-	this->_loadHeader(buffer);
-	// this->_loadData(buffer);
+	try {
+		buffer = readFile(path);
+	} catch (std::exception & e) {
+		std::cout << e.what() << std::endl;
+	}
+
+	raw = this->_loadHeader(buffer);
+	this->_loadData(raw);
+
+	delete[] buffer;
 }
 
 void ADSH::Wave::build(const WaveHeader header, const char * data) {}
 
 void ADSH::Wave::save(const std::string path) {
 
+	uint32_t numberOfSample;
 	std::ofstream file(path, std::ios::binary);
 
-	file.write(reinterpret_cast<char*>(&header), sizeof(WaveHeader));
+	//--------------WRITE HEADER----------------
 
-	file.write(data, header.fileSize - sizeof(WaveHeader));
+	writeint32_t(file, swap_endian(this->header.fileTypeChunkId));
+	writeint32_t(file, this->header.fileSize);
+	writeint32_t(file, swap_endian(this->header.fileFormatId));
+
+	writeint32_t(file, swap_endian(this->header.formatChunkID));
+	writeint32_t(file, this->header.formatChunkSize);
+	writeint16_t(file, this->header.audioFormat);
+	writeint16_t(file, this->header.numChannels);
+	writeint32_t(file, this->header.sampleRate);
+	writeint32_t(file, this->header.byteRate);
+	writeint16_t(file, this->header.blockAlign);
+	writeint16_t(file, this->header.bitsPerSample);
+
+	writeint32_t(file, swap_endian(this->header.dataChunkID));
+	writeint32_t(file, this->header.dataChunkSize);
+
+	// --------------WRITE DATA----------------
+
+	numberOfSample = this->getSamplesNumber();
+	for (int i = 0; i < numberOfSample; i++) {
+		for (int j = 0; j < this->header.numChannels; j++) {
+			file << static_cast<uint8_t>(this->data[i].channels[j]);
+			file << static_cast<uint8_t>(this->data[i].channels[j] >> 8);
+		}
+	}
 
 	file.close();
 
 }
 
-void ADSH::Wave::_loadHeader(const char * buffer) {
+ char * ADSH::Wave::_loadHeader(char * buffer) {
 
 	ADSH::WaveHeader header;
 
 	// DECLARATION BLOCK [12 bytes]
     memcpy(&header.fileTypeChunkId, buffer, 4);
-	header.fileTypeChunkId = bigToLittleEndian(header.fileTypeChunkId);
+	header.fileTypeChunkId = swap_endian(header.fileTypeChunkId);
     buffer += 4;
     memcpy(&header.fileSize, buffer, 4);
     buffer += 4;
    	memcpy(&header.fileFormatId, buffer, 4);
-	header.fileFormatId = bigToLittleEndian(header.fileFormatId);
+	header.fileFormatId = swap_endian(header.fileFormatId);
 	buffer += 4;
 
 	// JUNK BLOCK [36 bytes]
@@ -81,7 +114,7 @@ void ADSH::Wave::_loadHeader(const char * buffer) {
 
 	// DESCRIPTION BLOCK [12 bytes]
 	memcpy(&header.formatChunkID, buffer, 4);
-	header.formatChunkID = bigToLittleEndian(header.formatChunkID);
+	header.formatChunkID = swap_endian(header.formatChunkID);
 	buffer += 4;
 	memcpy(&header.formatChunkSize, buffer, 4);
 	buffer += 4;
@@ -100,19 +133,42 @@ void ADSH::Wave::_loadHeader(const char * buffer) {
 
 	// DATA BLOCK [8 bytes]
 	memcpy(&header.dataChunkID, buffer, 4);
-	header.dataChunkID = bigToLittleEndian(header.dataChunkID);
+	header.dataChunkID = swap_endian(header.dataChunkID);
 	buffer += 4;
 	memcpy(&header.dataChunkSize, buffer, 4);
 	buffer += 4;
 
 	this->header = header;
+	return buffer;
 }
 
 void ADSH::Wave::_loadData(const char * buffer) {
 
+	const uint32_t dataSize = header.dataChunkSize; // number of octets in data
+	const uint16_t numChannels = header.numChannels; // number of channels (1 = mono, 2 = stereo, etc.)
+	const uint16_t octetPerChannel = header.bitsPerSample / 8; // number of octets per channel (1 = 8 bits, 2 = 16 bits, etc.) 	  //FIX NEED: NEED TO BE A TEMPLATE (uint8_t, uint16_t, uint32_t, uint64_t, related to bitsPerSample)
+
+	const uint32_t numSamples = this->getSamplesNumber(); // number of samples (total number of octets / (number of channels * number of octets per channel))
+	
+	Sample * samples = new Sample[numSamples];
+
+	for (size_t i = 0; i < numSamples; i++) { //For each sample
+		samples[i].channels = new int16_t[numChannels]; // allocate memory for each channel
+		for (size_t j = 0; j < numChannels; j++) { // for each channel
+			memcpy(&samples[i].channels[j], buffer, octetPerChannel); // copy octetPerChannel bytes from buffer to channel
+			buffer += octetPerChannel; // move buffer pointer to next channel
+		}
+	}
+
+	this->data = samples;
 }
 
-std::ostream & ADSH::operator<<(std::ostream & o, const ADSH::Wave & rhs) noexcept {
+uint32_t		ADSH::Wave::getSamplesNumber() const noexcept{
+	return this->header.dataChunkSize / (this->header.numChannels * (this->header.bitsPerSample / 8));
+
+}
+
+std::ostream &	operator<<(std::ostream & o, const ADSH::Wave & rhs) noexcept {
 	
     o << "Header:" << std::endl << std::endl;
 

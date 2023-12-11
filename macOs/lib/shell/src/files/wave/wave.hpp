@@ -1,6 +1,6 @@
 #pragma once
 
-#include <string>
+#include "string.h"
 #include <fstream>
 #include <cstdint>
 #include <iostream>
@@ -8,6 +8,10 @@
 #include "../../utils/utils.hpp"
 
 namespace	ADSH {
+
+	struct Sample {
+		int16_t * channels; // channels[0] = data of left channel, channels[1] = data of right channel, etc...
+	};
 
 	struct	WaveHeader {
 		
@@ -34,21 +38,23 @@ namespace	ADSH {
 		// VARIABLES
 
 		public:		WaveHeader	header;
-		public:		char *		data;
+		public:		Sample	*	data;
 
 		// CONSTRUCTORS & DESTRUCTOR
 
 		public:		Wave() noexcept;							// Default constructor
-		public:		Wave(const Wave & rhs) noexcept;			// Copy constructor
+		public:		Wave(const Wave & rhs) noexcept	;		// Copy constructor
 		public:		Wave( Wave && rhs) noexcept;				// Move constructor
 		public:		~Wave() noexcept;							// Destructor
-
-		friend		std::ostream &	operator<<(std::ostream & o, const Wave & rhs) noexcept;
 
 		// OPERATORS
 
 		public:		Wave &			operator=(const Wave & rhs)noexcept;	// Copy assignment operator
 		public:		Wave &			operator=(Wave && rhs) noexcept;		// Move assignment operator
+
+		// GETTERS
+
+		public:		uint32_t		getSamplesNumber() const noexcept;
 
 		// METHODS
 
@@ -56,9 +62,11 @@ namespace	ADSH {
 		public:		void build(const WaveHeader header, const char * data);
 		public:		void save(const std::string path);
 
-		private:	void _loadHeader(const char * buffer);
+		private:	char * _loadHeader(char * buffer);
 		private:	void _loadData(const char * buffer);
 
 	};
 
 } // ADSH
+
+	std::ostream &	operator<<(std::ostream & o, const ADSH::Wave & rhs) noexcept;

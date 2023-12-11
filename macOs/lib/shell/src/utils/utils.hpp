@@ -4,24 +4,31 @@
 #include <cstddef>
 #include <string>
 #include <fstream>
+#include "../files/wave/wave.hpp"
 
 // ENDIAN.CPP
 
-template <typename T> T bigToLittleEndian(T u) {
+template <typename T> T swap_endian(T u) {
+    union
+    {
+        T u;
+        unsigned char u8[sizeof(T)];
+    } source, dest;
 
-    union { T u; unsigned char u8[sizeof(T)]; } src, dst;
-
-    src.u = u;
+    source.u = u;
 
     for (size_t k = 0; k < sizeof(T); k++)
-        dst.u8[k] = src.u8[sizeof(T) - k - 1];
+        dest.u8[k] = source.u8[sizeof(T) - k - 1];
 
-    return dst.u;
+    return dest.u;
 }
 
 // CONVERT.CPP
 
 char *				uint32_tToChar(uint32_t value);
+char *              uint16_tToChar(uint16_t value);
+void                writeint32_t(std::ofstream &file, uint32_t value);
+void                writeint16_t(std::ofstream &file, uint16_t value);
 
 // FILE.CPP
 
