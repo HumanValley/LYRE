@@ -1,8 +1,6 @@
 #pragma once
 
-#include <iostream>
-
-#include "../lib/shell/inc/shell.hpp"
+#include "../lib/audioShell/inc/shell.hpp"
 
 class	audioShellTester {
 	
@@ -15,9 +13,9 @@ class	audioShellTester {
 
 		ADSH::Wave wave;
 
-		// wave.load("test.wav");
+		wave.load("../test/assets/piano2.wav");
 
-		// std::cout << wave << std::endl;
+		std::cout << wave << std::endl;
 	}
 
 	public:		void	fileTest() {

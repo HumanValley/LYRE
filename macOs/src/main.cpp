@@ -1,8 +1,10 @@
-#include "../lib/shell/src/files/files.hpp"
+#include "../test/audioShellTester.hpp"
 
 int main() {
-    ADSH::Wave wavefile;
 
-    wavefile.load("../test/assets/piano2.wav");
+	audioShellTester test;
+
+    test.waveTest();
+
     return 0;
 }

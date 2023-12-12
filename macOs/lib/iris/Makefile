@@ -16,9 +16,9 @@ $(ODIR)%.o		: $(SDIR)%.cpp
 				$(CC) $(CFLG) -c $< -o ${addprefix $(ODIR), ${<:$(SDIR)%.cpp=%.o}}
 
 ${TARGET}		: $(OBJ)
-				ar rcs $(TARGET) $(OBJ)
+				libtool -static -o $(TARGET) $(OBJ)
 
-build			: $(OBJ)
+build			: $(TARGET)
 
 clean			:
 				rm -rf $(ODIR)

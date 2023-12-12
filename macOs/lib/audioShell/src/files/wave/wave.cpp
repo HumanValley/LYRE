@@ -43,12 +43,7 @@ void ADSH::Wave::load(const std::string path) {
     char *buffer;
 	char *raw;
 
-	try {
-		buffer = readFile(path);
-	} catch (std::exception & e) {
-		std::cout << e.what() << std::endl;
-	}
-
+	buffer = readFile(path);
 	raw = this->_loadHeader(buffer);
 	this->_loadData(raw);
 
@@ -146,31 +141,31 @@ void ADSH::Wave::_loadData(const char * buffer) {
 
 	const uint32_t dataSize = header.dataChunkSize; // number of octets in data
 	const uint16_t numChannels = header.numChannels; // number of channels (1 = mono, 2 = stereo, etc.)
-	const uint16_t octetPerChannel = header.bitsPerSample / 8; // number of octets per channel (1 = 8 bits, 2 = 16 bits, etc.) 	  //FIX NEED: NEED TO BE A TEMPLATE (uint8_t, uint16_t, uint32_t, uint64_t, related to bitsPerSample)
+	const uint16_t bytesPerChannel = header.bitsPerSample / 8; // number of octets per channel (1 = 8 bits, 2 = 16 bits, etc.) 	  //FIX NEED: NEED TO BE A TEMPLATE (uint8_t, uint16_t, uint32_t, uint64_t, related to bitsPerSample)
 
 	const uint32_t numSamples = this->getSamplesNumber(); // number of samples (total number of octets / (number of channels * number of octets per channel))
 	
 	Sample * samples = new Sample[numSamples];
 
 	for (size_t i = 0; i < numSamples; i++) { //For each sample
-		samples[i].channels = new int16_t[numChannels]; // allocate memory for each channel
+		samples[i].channels = new int32_t[numChannels]; // allocate memory for each channel
 		for (size_t j = 0; j < numChannels; j++) { // for each channel
-			memcpy(&samples[i].channels[j], buffer, octetPerChannel); // copy octetPerChannel bytes from buffer to channel
-			buffer += octetPerChannel; // move buffer pointer to next channel
+			memcpy(&samples[i].channels[j], buffer, bytesPerChannel); // copy bytesPerChannel bytes from buffer to channel
+			buffer += bytesPerChannel; // move buffer pointer to next channel
 		}
 	}
 
 	this->data = samples;
 }
 
-uint32_t		ADSH::Wave::getSamplesNumber() const noexcept{
-	return this->header.dataChunkSize / (this->header.numChannels * (this->header.bitsPerSample / 8));
+uint32_t ADSH::Wave::getSamplesNumber() const noexcept{
 
+	return this->header.dataChunkSize / (this->header.numChannels * (this->header.bitsPerSample / 8));
 }
 
-std::ostream &	operator<<(std::ostream & o, const ADSH::Wave & rhs) noexcept {
+std::ostream & operator<<(std::ostream & o, const ADSH::Wave & rhs) noexcept {
 	
-    o << "Header:" << std::endl << std::endl;
+    o << std::endl << "Header:" << std::endl << std::endl;
 
 	o << "fileTypeChunkId: " << uint32_tToChar(rhs.header.fileTypeChunkId) << std::endl;
 	o << "fileSize: " << rhs.header.fileSize << std::endl;
